@@ -57,6 +57,8 @@ void FileEncodingChangerDialog::convertFiles()
 
 	QString fileName = patternComboBox->currentText();
 
+	currentDir.setPath(directoryComboBox->currentText());
+
 	updateComboBox(patternComboBox);
     //updateComboBox(textComboBox);
     updateComboBox(directoryComboBox);
@@ -78,7 +80,52 @@ void FileEncodingChangerDialog::convertFiles()
 
 void FileEncodingChangerDialog::changeEncoding(QString from, QString to,QString path, bool makeBackup)
 {
-	QFile file(currentDir.absoluteFilePath(files[i]));
+	QFile file(path);
+	if (!file.exists())
+		return;
+
+	if (makeBackup)
+	{
+		QFile tmp;
+		for (int i = 1; i < 100; i++)
+		{
+			QString bf = QString("%1.orig.%2").arg(path).arg(i);
+			tmp.setFileName(bf);
+			if (!tmp.exists())
+			{
+				tmp.copy(path, bf);
+				break;
+			}
+		}
+	}
+
+	if (file.open(QIODevice::ReadOnly )) {
+            QTextStream in(&file);
+			
+			in.setCodec("EUC-KR");
+			while(!in.atEnd())
+			{
+				QString line = in.readLine();
+				qDebug() << "toAscii:" << line.toAscii();
+				qDebug() << "toLocal8Bit:" << line.toLocal8Bit();
+				qDebug() << "toUtf8:" << line.toUtf8();
+			}
+			file.seek(0);
+
+			QString qs = in.readAll();
+
+			QByteArray qa = qs.toUtf8();
+			
+			file.close();
+
+			if (file.open(QIODevice::ReadWrite | QIODevice::Truncate)) {
+				QTextStream out(&file);
+				out.setCodec("UTF-8");
+				out << qa;
+				file.close();
+			}
+     }
+	
 }
 
 void FileEncodingChangerDialog::notImplYet()
@@ -118,6 +165,8 @@ void FileEncodingChangerDialog::showFiles(const QStringList &files)
 {
 
     for (int i = 0; i < files.size(); ++i) {
+		changeEncoding(fromComboBox->currentText(), toComboBox->currentText(), currentDir.absoluteFilePath(files[i]), makeBackupCheck->isChecked());
+
         QFile file(currentDir.absoluteFilePath(files[i]));
         qint64 size = QFileInfo(file).size();
 

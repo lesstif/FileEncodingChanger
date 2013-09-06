@@ -23,6 +23,7 @@ private slots:
 	void notImplYet();
 private:
 	QStringList findFiles	(const QStringList &files, const QString &text);
+	void changeEncoding(QString from, QString to,QString path, bool makeBackup);
 	void setCharacterEncodings();
 	
 	QDir currentDir;

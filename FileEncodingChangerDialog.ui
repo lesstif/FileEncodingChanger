@@ -187,6 +187,9 @@
    <property name="text">
     <string>make Backup</string>
    </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
   </widget>
   <widget class="QWidget" name="">
    <property name="geometry">
