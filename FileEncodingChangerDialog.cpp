@@ -1,5 +1,6 @@
 #include <QtGui>
-#include <QDir>
+#include <QMessageBox>
+#include <QObject>
 
 #include "FileEncodingChangerDialog.h"
 
@@ -9,13 +10,33 @@ static void updateComboBox(QComboBox *comboBox)
         comboBox->addItem(comboBox->currentText());
 }
 
+const char* CHARACTER_SET_TABLES[] = {
+	"EUC-KR",
+	"UTF-8",
+	"UTF-16",
+};
+
 FileEncodingChangerDialog::FileEncodingChangerDialog(QWidget* parent) : QDialog(parent)
 {
 	setupUi(this);
 
-	layout()->setSizeConstraint(QLayout::SetFixedSize);
+//	layout()->setSizeConstraint(QLayout::SetFixedSize);
 
 //	setColumnRange('A', 'Z');
+	setCharacterEncodings();
+
+	patternComboBox->addItem("*.cpp;*.h;*.java;*.xml;");
+	directoryComboBox->addItem(currentDir.currentPath());
+
+}
+
+void FileEncodingChangerDialog::setCharacterEncodings()
+{
+	for (int i = 0; i < (sizeof(CHARACTER_SET_TABLES)/sizeof(*CHARACTER_SET_TABLES)); i++)
+	{
+		fromComboBox->addItem(CHARACTER_SET_TABLES[i]);
+		toComboBox->addItem(CHARACTER_SET_TABLES[i]);
+	}
 }
 
 void FileEncodingChangerDialog::browse()
@@ -28,6 +49,45 @@ void FileEncodingChangerDialog::browse()
             directoryComboBox->addItem(directory);
         directoryComboBox->setCurrentIndex(directoryComboBox->findText(directory));
     }
+}
+
+void FileEncodingChangerDialog::convertFiles()
+{
+	filesTable->reset();
+
+	QString fileName = patternComboBox->currentText();
+
+	updateComboBox(patternComboBox);
+    //updateComboBox(textComboBox);
+    updateComboBox(directoryComboBox);
+
+	QStringList files;
+	if (fileName.isEmpty())
+		fileName = "*";
+
+	QStringList filters = fileName.split(';',QString::KeepEmptyParts);
+
+	files = currentDir.entryList(filters,
+                       QDir::Files | QDir::NoSymLinks);
+
+	QString text = "";
+
+	files = findFiles(files, text);
+	showFiles(files);
+}
+
+void FileEncodingChangerDialog::changeEncoding(QString from, QString to,QString path, bool makeBackup)
+{
+	QFile file(currentDir.absoluteFilePath(files[i]));
+}
+
+void FileEncodingChangerDialog::notImplYet()
+{
+		QMessageBox::warning(NULL, QObject::tr("Alert"),
+			tr("Sorry Not Implemented!"),
+			QMessageBox::Ok);
+
+		autoDetectCheck->setChecked(false);
 }
 
 #if 0
@@ -54,37 +114,9 @@ void FileEncodingChangerDialog::setColumnRange(QChar first, QChar last)
 }
 #endif
 
-void FileEncodingChangerDialog::find()
-{
-    filesTable->setRowCount(0);
-
-    QString pattern = patternComboBox->currentText();
-    //QString text = textComboBox->currentText();
-    QString text;
-    QString path = directoryComboBox->currentText();
-
-    updateComboBox(patternComboBox);
-    //updateComboBox(textComboBox);
-    updateComboBox(directoryComboBox);
-
-    currentDir = QDir(path);
-    QStringList files;
-
-    if (pattern.isEmpty())
-        pattern = "*";
-
-    //TODO fileName pattern 확인
-    files = currentDir.entryList(QStringList(pattern),
-                                 QDir::Files | QDir::NoSymLinks);
-
-    files = findFiles(files, text);
-
-    showFiles(files);
-}
-
 void FileEncodingChangerDialog::showFiles(const QStringList &files)
 {
-#if 0
+
     for (int i = 0; i < files.size(); ++i) {
         QFile file(currentDir.absoluteFilePath(files[i]));
         qint64 size = QFileInfo(file).size();
@@ -96,14 +128,23 @@ void FileEncodingChangerDialog::showFiles(const QStringList &files)
         sizeItem->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         sizeItem->setFlags(sizeItem->flags() ^ Qt::ItemIsEditable);
 
+        QTableWidgetItem *fromItem = new QTableWidgetItem("EUC-KR");
+		QTableWidgetItem *toItem = new QTableWidgetItem("UTF-8");
+		QTableWidgetItem *resultItem = new QTableWidgetItem("Fail");
+
         int row = filesTable->rowCount();
         filesTable->insertRow(row);
         filesTable->setItem(row, 0, fileNameItem);
-        filesTable->setItem(row, 1, sizeItem);
+        filesTable->setItem(row, 1, fromItem);
+        filesTable->setItem(row, 2, toItem);        
+        filesTable->setItem(row, 3, resultItem);
+        filesTable->setItem(row, 4, sizeItem);
     }
-    filesFoundLabel->setText(tr("%1 file(s) found").arg(files.size()) +
+	filesTable->resizeColumnsToContents();
+
+    filesFoundLabel->setText(tr("%1 file(s) converted").arg(files.size()) +
                              (" (Double click on a file to open it)"));
-#endif
+
 }
 
 QStringList FileEncodingChangerDialog::findFiles(const QStringList &files, const QString &text)
@@ -113,7 +154,6 @@ QStringList FileEncodingChangerDialog::findFiles(const QStringList &files, const
     progressDialog.setRange(0, files.size());
     progressDialog.setWindowTitle(tr("Find Files"));
 
-//! [5] //! [6]
     QStringList foundFiles;
 
     for (int i = 0; i < files.size(); ++i) {
@@ -121,14 +161,15 @@ QStringList FileEncodingChangerDialog::findFiles(const QStringList &files, const
         progressDialog.setLabelText(tr("Searching file number %1 of %2...")
                                     .arg(i).arg(files.size()));
         qApp->processEvents();
-//! [6]
 
         if (progressDialog.wasCanceled())
             break;
 
-//! [7]
         QFile file(currentDir.absoluteFilePath(files[i]));
 
+		if (file.exists())
+			foundFiles << files[i];
+#if 0
         if (file.open(QIODevice::ReadOnly)) {
             QString line;
             QTextStream in(&file);
@@ -142,6 +183,7 @@ QStringList FileEncodingChangerDialog::findFiles(const QStringList &files, const
                 }
             }
         }
+#endif
     }
     return foundFiles;
 }

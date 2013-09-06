@@ -17,12 +17,14 @@ public:
 	
 private slots:
 	void browse();
-	void find();
 	void showFiles(const QStringList& files);	
 
+	void convertFiles();
+	void notImplYet();
 private:
 	QStringList findFiles	(const QStringList &files, const QString &text);
-
+	void setCharacterEncodings();
+	
 	QDir currentDir;
 };
 
