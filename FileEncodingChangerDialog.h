@@ -8,6 +8,17 @@
 class QString;
 class QStringList;
 
+typedef QList<QTextCodec *> QCodecList;
+
+struct convertRes {
+	QString file;
+	QString fromCodec;
+	QString toCodec;
+	QString result;
+};
+
+typedef QList<convertRes> ConvertResult;
+
 class FileEncodingChangerDialog : public QDialog, public Ui::FileEncodingChangerDialog
 {
 	Q_OBJECT
@@ -22,11 +33,16 @@ private slots:
 	void convertFiles();
 	void notImplYet();
 private:
+	void findCodecs(QCodecList& codecs, QString preferedEncoding);
+	void setCodecList(QComboBox* cb, const QCodecList &list);
+
 	QStringList findFiles	(const QStringList &files, const QString &text);
 	void changeEncoding(QString from, QString to,QString path, bool makeBackup);
 	void setCharacterEncodings();
 	
 	QDir currentDir;
+	QList<QTextCodec *> fromCodecs;
+	QList<QTextCodec *> toCodecs;
 };
 
 #endif

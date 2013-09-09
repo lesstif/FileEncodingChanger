@@ -218,6 +218,7 @@
       </property>
      </widget>
     </item>
+     <!--
     <item>
      <spacer name="verticalSpacer">
       <property name="orientation">
@@ -231,6 +232,7 @@
       </property>
      </spacer>
     </item>
+    -->
     <item>
      <widget class="QPushButton" name="moreButton">
       <property name="text">
@@ -261,7 +263,7 @@
   <zorder>indirLabel</zorder>
   <zorder>browseButton</zorder>
   <zorder>directoryComboBox</zorder>
-  <zorder>horizontalSpacer</zorder>
+  <!-- <zorder>horizontalSpacer</zorder> -->
   <zorder>filesTable</zorder>
   <zorder>fromLabel</zorder>
   <zorder>fromComboBox</zorder>
@@ -270,8 +272,8 @@
   <zorder>okButton</zorder>
   <zorder>autoDetectCheck</zorder>
   <zorder>filePatternLabel</zorder>
-  <zorder>verticalSpacer</zorder>
-  <zorder>horizontalLayoutWidget</zorder>
+   <!-- <zorder>verticalSpacer</zorder> 
+  <zorder>horizontalLayoutWidget</zorder>-->
   <zorder>filesFoundLabel</zorder>
   <zorder>makeBackupCheck</zorder>
  </widget>

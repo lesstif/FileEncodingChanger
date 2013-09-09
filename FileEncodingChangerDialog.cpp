@@ -22,14 +22,58 @@ FileEncodingChangerDialog::FileEncodingChangerDialog(QWidget* parent) : QDialog(
 
 //	layout()->setSizeConstraint(QLayout::SetFixedSize);
 
-//	setColumnRange('A', 'Z');
-	setCharacterEncodings();
-
 	patternComboBox->addItem("*.cpp;*.h;*.java;*.xml;");
 	directoryComboBox->addItem(currentDir.currentPath());
 
+	findCodecs(fromCodecs, "EUC-KR");
+	setCodecList(fromComboBox, fromCodecs);
+
+	findCodecs(toCodecs, "UTF-8");	
+	setCodecList(toComboBox, toCodecs);
 }
 
+void FileEncodingChangerDialog::setCodecList(QComboBox* cb,const QCodecList& list)
+{
+    cb->clear();
+    foreach (QTextCodec *codec, list)
+        cb->addItem(codec->name(), codec->mibEnum());
+	cb->setCurrentIndex(cb->count() - 1);
+}
+
+void FileEncodingChangerDialog::findCodecs(QCodecList& codecs, QString preferedEncoding)
+{
+    QMap<QString, QTextCodec *> codecMap;
+    QRegExp iso8859RegExp("ISO[- ]8859-([0-9]+).*");
+	
+    foreach (int mib, QTextCodec::availableMibs()) {
+        QTextCodec *codec = QTextCodec::codecForMib(mib);
+
+        QString sortKey = codec->name().toUpper();
+        int rank;
+
+		if (sortKey.compare(preferedEncoding, Qt::CaseInsensitive)) {
+            rank = 1;
+        } else if (sortKey.startsWith("UTF-8")) {
+            rank = 2;
+        } 
+		else if (sortKey.startsWith("UTF-16")) {
+            rank = 3;
+        } else if (iso8859RegExp.exactMatch(sortKey)) {
+            if (iso8859RegExp.cap(1).size() == 1)
+                rank = 4;
+            else
+                rank = 5;
+        } else {
+            rank = 6;
+        }
+        sortKey.prepend(QChar('0' + rank));
+
+        codecMap.insert(sortKey, codec);
+    }
+    codecs = codecMap.values();
+}
+
+#if 0
 void FileEncodingChangerDialog::setCharacterEncodings()
 {
 	for (int i = 0; i < (sizeof(CHARACTER_SET_TABLES)/sizeof(*CHARACTER_SET_TABLES)); i++)
@@ -38,6 +82,7 @@ void FileEncodingChangerDialog::setCharacterEncodings()
 		toComboBox->addItem(CHARACTER_SET_TABLES[i]);
 	}
 }
+#endif 
 
 void FileEncodingChangerDialog::browse()
 {
@@ -102,7 +147,16 @@ void FileEncodingChangerDialog::changeEncoding(QString from, QString to,QString 
 	if (file.open(QIODevice::ReadOnly )) {
             QTextStream in(&file);
 			
-			in.setCodec("EUC-KR");
+			QString fromCodecName = fromComboBox->currentText();
+			QString toCoecName = toComboBox->currentText();
+			if (autoDetectCheck->isChecked()) 
+			{
+				//TODO
+			}
+
+			in.setCodec(fromCodecName.toAscii());
+
+#ifdef _DEBUG
 			while(!in.atEnd())
 			{
 				QString line = in.readLine();
@@ -111,17 +165,16 @@ void FileEncodingChangerDialog::changeEncoding(QString from, QString to,QString 
 				qDebug() << "toUtf8:" << line.toUtf8();
 			}
 			file.seek(0);
+#endif			
 
 			QString qs = in.readAll();
 
-			QByteArray qa = qs.toUtf8();
-			
 			file.close();
 
 			if (file.open(QIODevice::ReadWrite | QIODevice::Truncate)) {
 				QTextStream out(&file);
-				out.setCodec("UTF-8");
-				out << qa;
+				out.setCodec(toCoecName.toAscii());
+				out << qs;
 				file.close();
 			}
      }
@@ -177,9 +230,10 @@ void FileEncodingChangerDialog::showFiles(const QStringList &files)
         sizeItem->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         sizeItem->setFlags(sizeItem->flags() ^ Qt::ItemIsEditable);
 
-        QTableWidgetItem *fromItem = new QTableWidgetItem("EUC-KR");
-		QTableWidgetItem *toItem = new QTableWidgetItem("UTF-8");
-		QTableWidgetItem *resultItem = new QTableWidgetItem("Fail");
+		//TODO 
+		QTableWidgetItem *fromItem = new QTableWidgetItem(fromComboBox->currentText());
+		QTableWidgetItem *toItem = new QTableWidgetItem(toComboBox->currentText());
+		QTableWidgetItem *resultItem = new QTableWidgetItem("Success");
 
         int row = filesTable->rowCount();
         filesTable->insertRow(row);
