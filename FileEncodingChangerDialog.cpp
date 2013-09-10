@@ -10,12 +10,6 @@ static void updateComboBox(QComboBox *comboBox)
         comboBox->addItem(comboBox->currentText());
 }
 
-const char* CHARACTER_SET_TABLES[] = {
-	"EUC-KR",
-	"UTF-8",
-	"UTF-16",
-};
-
 FileEncodingChangerDialog::FileEncodingChangerDialog(QWidget* parent) : QDialog(parent)
 {
 	setupUi(this);
@@ -114,13 +108,39 @@ void FileEncodingChangerDialog::convertFiles()
 
 	QStringList filters = fileName.split(';',QString::KeepEmptyParts);
 
-	files = currentDir.entryList(filters,
-                       QDir::Files | QDir::NoSymLinks);
+	QDirIterator iterator(currentDir.absolutePath(),  filters, QDir::Files | QDir::NoSymLinks, QDirIterator::Subdirectories);
 
-	QString text = "";
+	while(iterator.hasNext())
+	{
+		iterator.next();
+		qDebug() << iterator.filePath();
 
-	files = findFiles(files, text);
+		files.append(iterator.filePath());
+	}
+
+	writeRestoreScript(files);
 	showFiles(files);
+	
+}
+
+void FileEncodingChangerDialog::writeRestoreScript(const QStringList& files)
+{
+	QDir root = QDir(directoryComboBox->currentText());
+	QFile file(root.absolutePath() + "\\restore.bat");
+	
+	if (file.open(QIODevice::ReadWrite | QIODevice::Truncate)) {
+		QTextStream out(&file);
+	
+		out << "@ECHO ON" << endl << endl;
+		for(int i = 0; i < files.length(); i++) {
+			QString str = QString("MOVE \"%1\" \"%2\"").arg(files[i] + ".orig.1").arg(files[i]);
+
+			out << str << endl;
+		}
+		out << endl;
+
+		file.close();
+	}
 }
 
 void FileEncodingChangerDialog::changeEncoding(QString from, QString to,QString path, bool makeBackup)
@@ -189,30 +209,6 @@ void FileEncodingChangerDialog::notImplYet()
 
 		autoDetectCheck->setChecked(false);
 }
-
-#if 0
-void FileEncodingChangerDialog::setColumnRange(QChar first, QChar last)
-{
-	primaryColumnCombo->clear();
-	secondaryColumnCombo->clear();
-	tertiaryColumnCombo->clear();
-
-	secondaryColumnCombo->addItem(tr("None"));
-	tertiaryColumnCombo->addItem(tr("NOne"));
-	primaryColumnCombo->setMinimumSize(
-		secondaryColumnCombo->sizeHint());
-
-	QChar ch = first;
-
-	while (ch <= last) {
-		primaryColumnCombo->addItem(QString(ch));
-		secondaryColumnCombo->addItem(QString(ch));
-		tertiaryColumnCombo->addItem(QString(ch));
-
-		ch = ch.unicode() + 1;
-	}
-}
-#endif
 
 void FileEncodingChangerDialog::showFiles(const QStringList &files)
 {

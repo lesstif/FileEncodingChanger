@@ -33,6 +33,7 @@ private slots:
 	void convertFiles();
 	void notImplYet();
 private:
+	void writeRestoreScript(const QStringList& files);
 	void findCodecs(QCodecList& codecs, QString preferedEncoding);
 	void setCodecList(QComboBox* cb, const QCodecList &list);
 

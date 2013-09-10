@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Sort</string>
+   <string>FileEncodingChanger</string>
   </property>
   <widget class="QComboBox" name="patternComboBox">
    <property name="geometry">
